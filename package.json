@@ -1,0 +1,33 @@
+{
+  "name": "lec19",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "prebuild": "rimraf ./dist",
+    "build": "npx tsc",
+    "start": "node ./dist/main.js",
+    "preserve": "npm run build",
+    "serve": "concurrently \"npx tsc -w\" \"nodemon ./dist/main.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "concurrently": "^9.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.8.4",
+    "rimraf": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "nodemon": "^3.1.7",
+    "typescript": "^5.7.2"
+  }
+}
