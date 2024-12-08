@@ -1,175 +1,164 @@
-import { Request, Response } from "express";
-import fs from "fs/promises";
+import { RequestHandler, Request, Response } from "express";
+import expenseModel from "../../models/expense.js";
 
-interface IExpense {
-  id: number;
-  category: string;
-  price: number;
-  paymentMethod: string;
-  date: Date;
-}
-
-export const getExpenses = async (req: Request, res: Response): Promise<void> => {
+export const getExpenses: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const expenses = await fs.readFile("src/db/expenses.json", "utf-8");
-    const parsedExpenses: IExpense[] = JSON.parse(expenses);
-
-    let { page = 1, take = 10 } = req.query as { page?: number; take?: number };
+    let { page = 1, take = 5 } = req.query;
 
     page = Number(page);
     take = Number(take);
 
     if (take < 1) {
-      take = 10;
-    } else if (take > 10) {
-      take = 10;
+      take = 1;
+    } else if (take > 5) {
+      take = 5;
     }
-
-    const totalPages =
-      parsedExpenses.length === 0
-        ? 1
-        : parsedExpenses.length % take === 0
-        ? parsedExpenses.length / take
-        : Math.floor(parsedExpenses.length / take) + 1;
+    
+    const totalExpenseCound = await expenseModel.countDocuments();
+    const totalPage = Math.ceil(totalExpenseCound / take);
 
     if (page < 1) {
       page = 1;
-    } else if (page > totalPages) {
-      page = totalPages;
+    } else if (page > totalPage) {
+      page = totalPage;
     }
 
-    parsedExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const slicedExpense = parsedExpenses.slice((page - 1) * take, take * page);
-    res.status(200).json({slicedExpense})
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("Error: ", error.message);
-      res.status(500).json({ message: "error retrieving data", data: null });
-    } else {
-      console.log("Unexpected error: ", error);
-      res.status(500).json({ message: "error retrieving data", data: null });
-    }
+    const slicedExpense = await expenseModel
+      .find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * take)
+      .limit(take);
+
+    const expenses = await expenseModel.find();
+
+    const totalExpense = expenses.reduce((tot, curr) => {
+      return (tot += Number(curr.price));
+    }, 0);
+
+    res.status(200).render("pages/expenses.ejs", {
+      slicedExpense,
+      totalExpense,
+      currentPage: page,
+      totalPage,
+    });
+  } catch (error: any) {
+    console.log("Error: ", error.message);
+    res
+      .status(500)
+      .json({ message: "error retrieving data", data: null });
   }
 };
 
-export const getExpensesById = async (req: Request, res: Response): Promise<void> => {
+export const getExpensesById: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const expenses = await fs.readFile("src/db/expenses.json", 'utf-8');
-    const parsedExpenses: IExpense[] = JSON.parse(expenses || "[]");
     const { id } = req.params;
-    const expense = parsedExpenses.find((el) => el.id === Number(id));
 
+    const expense = await expenseModel.findById(id);
     if (!expense) {
-      res.status(404).json({ message: "expense not found", data: null });
+      res.status(404).json({ message: "Expense not found", data: null });
       return;
     }
-    res.status(200).json({ message: "success", data: expense });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("Error get: ", error.message);
-      res.status(500).json({ message: "error retrieving data" });
-    } else {
-      console.log("Unexpected error: ", error);
-      res.status(500).json({ message: "error retrieving data" });
-    }
+
+    res.status(200).json({ message: "Success", data: expense });
+  } catch (error: any) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ message: "Error retrieving data" });
   }
 };
 
-export const addExpenses = async (req: Request, res: Response): Promise<void> => {
+export const addExpenses: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { category, price, paymentMethod } = req.body;
 
-    const expenses = await fs.readFile("src/db/expenses.json", "utf-8");
-    const parsedExpenses: IExpense[] = JSON.parse(expenses || "[]");
-    const lastId = parsedExpenses[parsedExpenses.length - 1]?.id || 0;
+    if (!category || !price || !paymentMethod) {
+      res.status(400).json({ message: "All fields are required" });
+      return;
+    }
 
-    const newExpense: IExpense = {
-      id: lastId + 1,
-      category: category,
-      price: price,
-      paymentMethod: paymentMethod,
-      date: new Date().toISOString() as unknown as Date,
-    };
-
-    parsedExpenses.push(newExpense);
-
-    await fs.writeFile(
-      "src/db/expenses.json",
-      JSON.stringify(parsedExpenses, null, 2)
-    );
-
+    const newExpense = await expenseModel.create({
+      category,
+      price,
+      paymentMethod,
+    });
     res.status(201).json({ message: "New expense created", data: newExpense });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("Error: ", error.message);
-      res.status(500).json({ message: "error adding data", data: null });
-    } else {
-      console.log("Unexpected error: ", error);
-      res.status(500).json({ message: "error adding data", data: null });
-    }
+  } catch (error: any) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ message: "Error adding data", data: null });
   }
 };
 
-export const deleteExpenses = async (req: Request, res: Response): Promise<void> => {
+export const deleteExpenses: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const expenses = await fs.readFile("src/db/expenses.json", "utf-8");
-    const parsedExpenses: IExpense[] = JSON.parse(expenses || "[]");
-
     const { id } = req.params;
 
-    const index = parsedExpenses.findIndex((el) => el.id === Number(id));
-
-    if (index === -1) {
-      res.status(404).json({ message: "expense not found", data: null });
+    const deletedExpense = await expenseModel.findByIdAndDelete(id);
+    if (!deletedExpense) {
+      res.status(404).json({ message: "Expense not found" });
       return;
     }
 
-    const deletedItem = parsedExpenses.splice(index, 1);
-
-    await fs.writeFile(
-      "src/db/expenses.json",
-      JSON.stringify(parsedExpenses, null, 2)
-    );
-    res.status(200).json({ message: "deleted successfully", data: deletedItem });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("Error: ", error.message);
-      res.status(500).json({ message: "error deleting data", data: null });
-    }
+    res
+      .status(200)
+      .json({ message: "Expense deleted successfully", data: deletedExpense });
+  } catch (error: any) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ message: "Error deleting data", data: null });
   }
 };
 
-export const updateExpenses = async (req: Request, res: Response): Promise<void> => {
+export const updateExpenses: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { id } = req.params;
-    const { category, price, paymentMethod } = req.body;
 
-    const expenses = await fs.readFile("src/db/expenses.json", "utf-8");
-    const parsedExpenses: IExpense[] = JSON.parse(expenses || "[]");
+    const updatedExpense = await expenseModel.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
 
-    const index = parsedExpenses.findIndex((el) => el.id === Number(id));
-    if (index === -1) {
-      res.status(404).json({ message: "expense not found", data: null });
+    if (!updatedExpense) {
+      res.status(404).json({ message: "Expense not found", data: null });
       return;
     }
 
-    parsedExpenses[index] = {
-      ...parsedExpenses[index],
-      category: category || parsedExpenses[index].category,
-      price: price || parsedExpenses[index].price,
-      paymentMethod: paymentMethod || parsedExpenses[index].paymentMethod,
-    };
+    res
+      .status(200)
+      .json({ message: "Expense updated successfully", data: updatedExpense });
+  } catch (error: any) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ message: "Error updating data", data: null });
+  }
+};
 
-    await fs.writeFile(
-      "src/db/expenses.json",
-      JSON.stringify(parsedExpenses, null, 2)
-    );
+export const getDetails: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
 
-    res.status(200).json({ message: "updated successfully", data: parsedExpenses[index] });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.log("Error: ", error.message);
-      res.status(500).json({ message: "error updating data", data: null });
+    const expense = await expenseModel.findById(id);
+    if (!expense) {
+      res.status(404).json({ message: "Expense not found", data: null });
+      return;
     }
+
+    res.status(200).render("pages/details.ejs", { expense });
+  } catch (error: any) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ message: "Error retrieving data" });
   }
 };

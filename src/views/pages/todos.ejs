@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo App</title>
+  <link rel="stylesheet" href="/css/todos.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Todo App</h1>
+    </header>
+    <form id="todo-form" onsubmit="handleAdd(event)">
+      <input type="text" class="title" id="todo-input" placeholder="Add a new todo" required>
+      <button type="submit">Add Todo</button>
+    </form>
+    <ul id="todo-list">
+      <% if (todos.length===0) { %>
+        <li class="todo">
+          <p style="text-align: center; color: gray;">Empty</p>
+        </li>
+        <% } else { %>
+          <% todos.forEach(todo=> { %>
+            <li class="todo <%= todo.isCompleted ? 'completed' : '' %>">
+              <span class="todo-text">
+                <%= todo.title %>
+              </span>
+              <div class="todo-actions">
+                <button class="complete-btn" id="complete-btn-<%= todo._id %>"
+                  onclick="handleCompleting('<%= todo._id %>')">✓</button>
+                <button class="incomplete-btn" id="incomplete-btn-<%= todo._id %>" style="display: none;"
+                  onclick="handleIncomplete('<%= todo._id %>')">✓</button>
+                <button class="delete-btn" onclick="handleDelete('<%= todo._id %>')">×</button>
+              </div>
+            </li>
+            <% }) %>
+              <% } %>
+    </ul>
+    <div class="pagination" role="navigation" aria-label="Expense list pagination">
+      <button id="prevBtn" onclick="prevPage()" <%=currentPage <=1 ? 'disabled' : '' %>>&laquo; Previous</button>
+      <span id="pageInfo">Page <%= currentPage %> of <%= totalPage %></span>
+      <button id="nextBtn" onclick="nextPage()" <%=currentPage>= totalPage ? 'disabled' : '' %>>Next &raquo;</button>
+    </div>
+    <p>Total todos: <%= totalTodos %>
+    </p>
+  </div>
+  <script>
+    window.paginationData = {
+      currentPage: <%= currentPage %>,
+      totalPages: <%= totalPage %>
+    };
+  </script>
+  <script src="/js/todos.js"></script>
+</body>
+
+</html>

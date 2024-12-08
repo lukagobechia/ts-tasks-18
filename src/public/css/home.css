@@ -1,0 +1,94 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-link {
+    width: 100%;
+    padding: 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.todos .app-link {
+    background-color: #3498db;
+}
+
+.expenses .app-link {
+    background-color: #2ecc71;
+}
+
+.app-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.todos .app-link:hover {
+    background-color: #2980b9;
+}
+
+.expenses .app-link:hover {
+    background-color: #27ae60;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .container {
+        width: 90%;
+        padding: 1rem;
+    }
+
+    .app-link {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Header and Footer styles (assuming they're included in the partials) */
+header, footer {
+    background-color: #333;
+    color: #ecf0f1;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+header {
+    margin-bottom: 2rem;
+}
+
+footer {
+    margin-top: auto;
+}
+
